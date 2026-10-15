@@ -2,7 +2,6 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
@@ -69,15 +68,57 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+    pub fn merge(list_a: LinkedList<T>, list_b: LinkedList<T>) -> Self
+    where
+        T: Ord,
+    {
+        let mut result = Self::new();
+        let mut a = list_a.start;
+        let mut b = list_b.start;
+
+        unsafe {
+            // 两边都还有节点，才能继续比较。
+            while let (Some(pa), Some(pb)) = (a, b) {
+                // 选较小节点，并让对应游标前进一步。
+                let mut chosen = if pa.as_ref().val <= pb.as_ref().val {
+                    a = pa.as_ref().next;
+                    pa
+                } else {
+                    b = pb.as_ref().next;
+                    pb
+                };
+
+                // 已记住后续位置，现在可以断开这个节点的旧连接。
+                chosen.as_mut().next = None;
+
+                // 把它接到结果尾部。
+                match result.end {
+                    None => result.start = Some(chosen),
+                    Some(mut tail) => tail.as_mut().next = Some(chosen),
+                }
+                result.end = Some(chosen);
+            }
+
+            // 一边走完后，取另一边剩余的整段。
+            let (rest, rest_end) = if a.is_some() {
+                (a, list_a.end)
+            } else {
+                (b, list_b.end)
+            };
+
+            match result.end {
+                None => result.start = rest,
+                Some(mut tail) => tail.as_mut().next = rest,
+            }
+
+            if rest.is_some() {
+                result.end = rest_end;
+            }
         }
-	}
+
+        result.length = list_a.length + list_b.length;
+        result
+    }
 }
 
 impl<T> Display for LinkedList<T>
